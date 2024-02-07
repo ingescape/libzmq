@@ -129,7 +129,7 @@ if (NOT MSVC)
   if(NOT CMAKE_C_FLAGS MATCHES "-std=" AND NOT C_STANDARD AND NOT CMAKE_C_STANDARD)
     check_c_compiler_flag("-std=c11" COMPILER_SUPPORTS_C11)
     if(COMPILER_SUPPORTS_C11)
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_DEFAULT_SOURCE -std=c11")
     else()
       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
     endif()
@@ -149,6 +149,7 @@ endif()
 # Will be used to add flags to pkg-config useful when apps want to statically link
 set(pkg_config_libs_private "")
 set(pkg_config_names_private "")
+set(pkg_config_defines "")
 
 option(WITH_OPENPGM "Build with support for OpenPGM" OFF)
 option(WITH_NORM "Build with support for NORM" OFF)
@@ -169,6 +170,7 @@ if(ENABLE_DRAFTS)
   message(STATUS "Building draft classes and methods")
   option(ENABLE_WS "Enable WebSocket transport" ON)
   option(ENABLE_RADIX_TREE "Use radix tree implementation to manage subscriptions" ON)
+  set(pkg_config_defines "-DZMQ_BUILD_DRAFT_API=1")
 else()
   message(STATUS "Not building draft classes and methods")
   option(ENABLE_WS "Enable WebSocket transport" OFF)
@@ -260,13 +262,13 @@ if(NOT MSVC)
   check_cxx_symbol_exists(strlcpy string.h ZMQ_HAVE_STRLCPY)
 endif()
 
-# Select curve encryption library, defaults to tweetnacl To use libsodium instead, use --with-libsodium(must be
+# Select curve encryption library, defaults to disabled To use libsodium instead, use --with-libsodium(must be
 # installed) To disable curve, use --disable-curve
 
-option(WITH_LIBSODIUM "Use libsodium instead of built-in tweetnacl" ON)
+option(WITH_LIBSODIUM "Use libsodium" OFF)
 option(WITH_LIBSODIUM_STATIC "Use static libsodium library" OFF)
 option(ENABLE_LIBSODIUM_RANDOMBYTES_CLOSE "Automatically close libsodium randombytes. Not threadsafe without getrandom()" ON)
-option(ENABLE_CURVE "Enable CURVE security" ON)
+option(ENABLE_CURVE "Enable CURVE security" OFF)
 
 if(ENABLE_CURVE)
   if(WITH_LIBSODIUM)
@@ -299,17 +301,11 @@ if(ENABLE_CURVE)
         endif()
       else()
         message(
-          WARNING
-            "libsodium not installed, instead using builtin tweetnacl, you may want to install libsodium and run cmake again"
+          ERROR
+            "libsodium not installed, you may want to install libsodium and run cmake again"
         )
       endif()
     endif(TARGET sodium)
-  endif()
-  if(NOT ZMQ_HAVE_CURVE)
-    message(STATUS "Using tweetnacl for CURVE security")
-    list(APPEND sources ${CMAKE_CURRENT_SOURCE_DIR}/src/tweetnacl.c)
-    set(ZMQ_USE_TWEETNACL 1)
-    set(ZMQ_HAVE_CURVE 1)
   endif()
 else()
   message(STATUS "CURVE security is disabled")
@@ -756,20 +752,24 @@ if(NOT ANDROID)
 endif()
 
 # -----------------------------------------------------------------------------
-if(NOT CMAKE_CROSSCOMPILING AND NOT MSVC)
-  zmq_check_sock_cloexec()
-  zmq_check_o_cloexec()
-  zmq_check_so_bindtodevice()
-  zmq_check_so_keepalive()
-  zmq_check_so_priority()
-  zmq_check_tcp_keepcnt()
-  zmq_check_tcp_keepidle()
-  zmq_check_tcp_keepintvl()
-  zmq_check_tcp_keepalive()
-  zmq_check_tcp_tipc()
+if (NOT MSVC)
+  # Compilation checks
   zmq_check_pthread_setname()
   zmq_check_pthread_setaffinity()
-  zmq_check_getrandom()
+  # Execution checks
+  if(NOT CMAKE_CROSSCOMPILING)
+    zmq_check_sock_cloexec()
+    zmq_check_o_cloexec()
+    zmq_check_so_bindtodevice()
+    zmq_check_so_keepalive()
+    zmq_check_so_priority()
+    zmq_check_tcp_keepcnt()
+    zmq_check_tcp_keepidle()
+    zmq_check_tcp_keepintvl()
+    zmq_check_tcp_keepalive()
+    zmq_check_tcp_tipc()
+    zmq_check_getrandom()
+  endif()
 endif()
 
 if(CMAKE_SYSTEM_NAME MATCHES "Linux"
@@ -792,7 +792,7 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
   add_definitions(-D_DARWIN_C_SOURCE)
 endif()
 
-find_package(AsciiDoc)
+find_package(AsciiDoctor)
 
 cmake_dependent_option(WITH_DOC "Build Reference Guide documentation(requires DocBook)" ON "ASCIIDOC_FOUND;NOT WIN32"
                        OFF) # Do not build docs on Windows due to issues with symlinks
@@ -1200,7 +1200,7 @@ endif()
 
 set(public_headers include/zmq.h include/zmq_utils.h)
 
-set(readme-docs AUTHORS COPYING COPYING.LESSER NEWS)
+set(readme-docs AUTHORS LICENSE NEWS)
 
 # -----------------------------------------------------------------------------
 # optional modules
@@ -1278,25 +1278,16 @@ option(WITH_DOCS "Build html docs" ON)
 if(WITH_DOCS)
   file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc)
   file(
-    GLOB docs
+    GLOB asciidoc_files
     RELATIVE ${CMAKE_CURRENT_BINARY_DIR}/
-    "${CMAKE_CURRENT_SOURCE_DIR}/doc/*.txt")
-  set(html-docs)
-  foreach(txt ${docs})
-    string(REGEX REPLACE ".*/(.*)\\.txt" "\\1.html" html ${txt})
-    set(src ${txt})
-    set(dst doc/${html})
-    if(WITH_DOC)
-      add_custom_command(
-        OUTPUT ${dst}
-        COMMAND ${ASCIIDOC_EXECUTABLE} -d manpage -b xhtml11 -f ${CMAKE_CURRENT_SOURCE_DIR}/doc/asciidoc.conf
-                -azmq_version=${ZMQ_VERSION} -o ${dst} ${src}
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${src}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Generating ${html}")
-      list(APPEND html-docs ${CMAKE_CURRENT_BINARY_DIR}/${dst})
-    endif()
-  endforeach()
+    "${CMAKE_CURRENT_SOURCE_DIR}/doc/*.adoc")
+  string(REPLACE ".txt" ".html" html_files ${asciidoc_files})
+  add_custom_command(
+    OUTPUT ${html_files}
+    COMMAND asciidoctor -b html -azmq_version=${ZMQ_VERSION} *.adoc
+    DEPENDS ${asciidoc_files}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Generating ${html}")
 endif()
 
 if(ZMQ_BUILD_FRAMEWORK)
@@ -1424,7 +1415,7 @@ else()
     # NOTE: the SOVERSION and VERSION MUST be the same as the one generated by libtool! It is NOT the same as the
     # version of the package.
     set_target_properties(
-      libzmq PROPERTIES COMPILE_DEFINITIONS "DLL_EXPORT" PUBLIC_HEADER "${public_headers}" VERSION "5.2.5"
+      libzmq PROPERTIES COMPILE_DEFINITIONS "DLL_EXPORT" PUBLIC_HEADER "${public_headers}" VERSION "5.2.6"
                         SOVERSION "5" OUTPUT_NAME "${ZMQ_OUTPUT_BASENAME}" PREFIX "lib")
     if(ZMQ_BUILD_FRAMEWORK)
       set_target_properties(
@@ -1490,6 +1481,11 @@ endforeach()
 
 if(BUILD_SHARED)
   target_link_libraries(libzmq ${CMAKE_THREAD_LIBS_INIT})
+
+  if(QNX)
+    target_link_libraries(libzmq -lsocket)
+  endif()
+
   if(GNUTLS_FOUND)
     target_link_libraries(libzmq ${GNUTLS_LIBRARIES})
     target_include_directories(libzmq PRIVATE "${GNUTLS_INCLUDE_DIR}")
@@ -1531,6 +1527,10 @@ if(BUILD_SHARED)
 
   if(norm_FOUND)
       target_link_libraries(libzmq norm::norm)
+  endif()
+
+  if(OPENPGM_FOUND)
+      target_link_libraries(libzmq ${OPENPGM_LIBRARIES})
   endif()
 endif()
 
@@ -1581,6 +1581,10 @@ if(BUILD_STATIC)
 
   if(norm_FOUND)
       target_link_libraries(libzmq-static norm::norm)
+  endif()
+
+  if(OPENPGM_FOUND)
+      target_link_libraries(libzmq-static ${OPENPGM_LIBRARIES})
   endif()
 endif()
 
@@ -1802,7 +1806,7 @@ if(MSVC AND ENABLE_CPACK)
   set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "ZeroMQ lightweight messaging kernel")
   set(CPACK_PACKAGE_VENDOR "Miru")
   set(CPACK_NSIS_CONTACT "Steven McCoy <Steven.McCoy@miru.hk>")
-  set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_BINARY_DIR}\\\\COPYING.txt")
+  set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_BINARY_DIR}\\\\LICENSE.txt")
   # set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_BINARY_DIR}\\\\README.txt") set(CPACK_RESOURCE_FILE_WELCOME
   # "${CMAKE_CURRENT_BINARY_DIR}\\\\WELCOME.txt") There is a bug in NSI that does not handle full unix paths properly.
   # Make sure there is at least one set of four(4) backslashes.
