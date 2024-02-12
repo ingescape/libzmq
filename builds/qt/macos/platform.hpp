@@ -10,12 +10,15 @@
 /* #undef ZMQ_IOTHREAD_POLLER_USE_EPOLL */
 /* #undef ZMQ_IOTHREAD_POLLER_USE_EPOLL_CLOEXEC */
 /* #undef ZMQ_IOTHREAD_POLLER_USE_DEVPOLL */
+/* #undef ZMQ_IOTHREAD_POLLER_USE_POLLSET */
 /* #undef ZMQ_IOTHREAD_POLLER_USE_POLL */
 /* #undef ZMQ_IOTHREAD_POLLER_USE_SELECT */
+#define ZMQ_HAVE_PPOLL
 
 /* #undef ZMQ_POLL_BASED_ON_SELECT */
 #define ZMQ_POLL_BASED_ON_POLL
 
+#define HAVE_POSIX_MEMALIGN 1
 #define ZMQ_CACHELINE_SIZE 64
 
 /* #undef ZMQ_FORCE_MUTEXES */
@@ -35,11 +38,13 @@
 
 /* #undef ZMQ_HAVE_SO_PEERCRED */
 /* #undef ZMQ_HAVE_LOCAL_PEERCRED */
+/* #undef ZMQ_HAVE_BUSY_POLL */
 
 #define ZMQ_HAVE_O_CLOEXEC
 
 /* #undef ZMQ_HAVE_SOCK_CLOEXEC */
 #define ZMQ_HAVE_SO_KEEPALIVE
+/* #undef ZMQ_HAVE_SO_PRIORITY */
 #define ZMQ_HAVE_TCP_KEEPCNT
 /* #undef ZMQ_HAVE_TCP_KEEPIDLE */
 #define ZMQ_HAVE_TCP_KEEPINTVL
@@ -51,20 +56,31 @@
 /* #undef ZMQ_HAVE_PTHREAD_SET_AFFINITY */
 /* #undef HAVE_ACCEPT4 */
 #define HAVE_STRNLEN
+#define ZMQ_HAVE_STRLCPY
+/* #undef ZMQ_HAVE_LIBBSD */
 
 #define ZMQ_HAVE_IPC
+#define ZMQ_HAVE_STRUCT_SOCKADDR_UN
 
 #define ZMQ_USE_BUILTIN_SHA1
 /* #undef ZMQ_USE_NSS */
 #define ZMQ_HAVE_WS
+/* #undef ZMQ_HAVE_WSS */
+/* #undef ZMQ_HAVE_TIPC */
 
 /* #undef ZMQ_HAVE_OPENPGM */
+/* #undef ZMQ_HAVE_NORM */
+/* #undef ZMQ_HAVE_VMCI */
+
 /* #undef ZMQ_MAKE_VALGRIND_HAPPY */
 
 #define ZMQ_HAVE_CURVE
-#define ZMQ_USE_TWEETNACL
-/* #undef ZMQ_USE_LIBSODIUM */
+/* #undef ZMQ_USE_TWEETNACL */
+#define ZMQ_USE_LIBSODIUM
 /* #undef SODIUM_STATIC */
+/* #undef ZMQ_USE_GNUTLS */
+#define ZMQ_USE_RADIX_TREE
+#define HAVE_IF_NAMETOINDEX
 
 #ifdef _AIX
   #define ZMQ_HAVE_AIX
@@ -129,3 +145,4 @@
 /* #undef ZMQ_HAVE_WINDOWS_UWP */
 
 #endif
+
