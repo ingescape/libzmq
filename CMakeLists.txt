@@ -515,7 +515,7 @@ execute_process(
 if(CACHELINE_SIZE STREQUAL ""
    OR CACHELINE_SIZE EQUAL 0
    OR CACHELINE_SIZE EQUAL -1
-   OR CACHELINE_SIZE EQUAL "undefined")
+   OR CACHELINE_SIZE STREQUAL "undefined")
   set(ZMQ_CACHELINE_SIZE 64)
 else()
   set(ZMQ_CACHELINE_SIZE ${CACHELINE_SIZE})
@@ -612,6 +612,12 @@ if(NOT MINGW)
   find_library(RT_LIBRARY rt)
   if(RT_LIBRARY)
     set(pkg_config_libs_private "${pkg_config_libs_private} -lrt")
+
+    set(CMAKE_REQUIRED_LIBRARIES rt)
+    check_cxx_symbol_exists(clock_gettime time.h HAVE_CLOCK_GETTIME)
+    set(CMAKE_REQUIRED_LIBRARIES)
+  else()
+    check_cxx_symbol_exists(clock_gettime time.h HAVE_CLOCK_GETTIME)
   endif()
 endif()
 
@@ -632,10 +638,6 @@ if(WIN32 AND NOT CYGWIN)
 endif()
 
 if(NOT MSVC)
-  set(CMAKE_REQUIRED_LIBRARIES rt)
-  check_cxx_symbol_exists(clock_gettime time.h HAVE_CLOCK_GETTIME)
-  set(CMAKE_REQUIRED_LIBRARIES)
-
   check_cxx_symbol_exists(fork unistd.h HAVE_FORK)
   check_cxx_symbol_exists(gethrtime sys/time.h HAVE_GETHRTIME)
   check_cxx_symbol_exists(mkdtemp "stdlib.h;unistd.h" HAVE_MKDTEMP)
@@ -728,7 +730,7 @@ if(LIBZMQ_WERROR)
     zmq_check_cxx_flag_prepend("/WX")
   else()
     zmq_check_cxx_flag_prepend("-Werror")
-    if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    if(${CMAKE_CXX_COMPILER_ID} MATCHES "SunPro")
       zmq_check_cxx_flag_prepend("-errwarn=%all")
     endif()
   endif()
