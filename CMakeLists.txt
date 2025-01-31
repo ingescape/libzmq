@@ -1,7 +1,6 @@
 # CMake build script for ZeroMQ
-project(ZeroMQ)
 
-if(${CMAKE_SYSTEM_NAME} STREQUAL Darwin)
+if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL Darwin)
   cmake_minimum_required(VERSION 3.0.2)
 else()
   cmake_minimum_required(VERSION 2.8.12)
@@ -13,6 +12,8 @@ if(OSX_UNIVERSAL)
     set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "Build universal binaries")
     message(STATUS "Building for arm64 and x86_64")
 endif()
+
+project(ZeroMQ)
 
 include(CheckIncludeFiles)
 include(CheckCCompilerFlag)
@@ -590,12 +591,18 @@ if(ZMQ_HAVE_WINDOWS)
   # Cannot use check_library_exists because the symbol is always declared as char(*)(void)
   set(CMAKE_REQUIRED_LIBRARIES "ws2_32.lib")
   check_cxx_symbol_exists(WSAStartup "winsock2.h" HAVE_WS2_32)
+  if(HAVE_WS2_32)
+    set(pkg_config_libs_private "${pkg_config_libs_private} -lws2_32")
+  endif()
 
   set(CMAKE_REQUIRED_LIBRARIES "rpcrt4.lib")
   check_cxx_symbol_exists(UuidCreateSequential "rpc.h" HAVE_RPCRT4)
 
   set(CMAKE_REQUIRED_LIBRARIES "iphlpapi.lib")
   check_cxx_symbol_exists(GetAdaptersAddresses "winsock2.h;iphlpapi.h" HAVE_IPHLAPI)
+  if(HAVE_IPHLAPI)
+    set(pkg_config_libs_private "${pkg_config_libs_private} -liphlpapi")
+  endif()
   check_cxx_symbol_exists(if_nametoindex "iphlpapi.h" HAVE_IF_NAMETOINDEX)
 
   set(CMAKE_REQUIRED_LIBRARIES "")
@@ -1273,9 +1280,9 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/builds/cmake/platform.hpp.in ${CMAKE_
 list(APPEND sources ${CMAKE_CURRENT_BINARY_DIR}/platform.hpp)
 
 set(prefix ${CMAKE_INSTALL_PREFIX})
-set(exec_prefix ${prefix})
-set(libdir ${prefix}/${CMAKE_INSTALL_LIBDIR})
-set(includedir ${prefix}/${CMAKE_INSTALL_INCLUDEDIR})
+set(exec_prefix "\${prefix}")
+set(libdir "\${prefix}/${CMAKE_INSTALL_LIBDIR}")
+set(includedir "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
 set(VERSION ${ZMQ_VERSION_MAJOR}.${ZMQ_VERSION_MINOR}.${ZMQ_VERSION_PATCH})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/libzmq.pc.in ${CMAKE_CURRENT_BINARY_DIR}/libzmq.pc @ONLY)
 set(zmq-pkgconfig ${CMAKE_CURRENT_BINARY_DIR}/libzmq.pc)
