@@ -1,10 +1,6 @@
 # CMake build script for ZeroMQ
 
-if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL Darwin)
-  cmake_minimum_required(VERSION 3.0.2...3.31)
-else()
-  cmake_minimum_required(VERSION 2.8.12...3.31)
-endif()
+cmake_minimum_required(VERSION 3.16)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11" CACHE STRING "Minimum OS X deployment version")
 
 option(OSX_UNIVERSAL "Build for both arm64 and x86_64" OFF)
