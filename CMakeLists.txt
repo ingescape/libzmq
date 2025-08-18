@@ -1,9 +1,9 @@
 # CMake build script for ZeroMQ
 
 if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL Darwin)
-  cmake_minimum_required(VERSION 3.0.2)
+  cmake_minimum_required(VERSION 3.0.2...3.31)
 else()
-  cmake_minimum_required(VERSION 2.8.12)
+  cmake_minimum_required(VERSION 2.8.12...3.31)
 endif()
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11" CACHE STRING "Minimum OS X deployment version")
 
@@ -1937,4 +1937,10 @@ option(ENABLE_NO_EXPORT "Build with empty ZMQ_EXPORT macro, bypassing platform-b
 if(ENABLE_NO_EXPORT)
   message(STATUS "Building with empty ZMQ_EXPORT macro")
   add_definitions(-DZMQ_NO_EXPORT)
+endif()
+
+if (ENABLE_CURVE)
+  add_executable(curve_keygen tools/curve_keygen.cpp)
+  target_link_libraries(curve_keygen libzmq)
+  install(TARGETS curve_keygen RUNTIME DESTINATION bin)
 endif()
