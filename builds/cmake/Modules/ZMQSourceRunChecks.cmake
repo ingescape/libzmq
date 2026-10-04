@@ -331,3 +331,18 @@ int main (int argc, char *argv [])
 "
     ZMQ_HAVE_SO_PRIORITY)
 endmacro()
+
+macro(zmq_check_vsock)
+    message(STATUS "Checking whether VSOCK is supported")
+  check_c_source_runs(
+    "
+#include <sys/socket.h>
+#include <linux/vm_sockets.h>
+
+int main (void)
+{
+    return AF_VSOCK == 0 || VMADDR_CID_LOCAL == 0;
+}
+"
+    ZMQ_HAVE_VSOCK)
+endmacro()

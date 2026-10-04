@@ -1,5 +1,9 @@
 /* SPDX-License-Identifier: MPL-2.0 */
 
+#ifdef _AIX
+#define MSG_DONTWAIT MSG_NONBLOCK
+#endif
+
 #ifndef __TESTUTIL_HPP_INCLUDED__
 #define __TESTUTIL_HPP_INCLUDED__
 
@@ -182,6 +186,10 @@ int is_ipv6_available (void);
 // only way to reliably check is to actually open a socket and try to bind it
 // as it depends on a non-default kernel module to be already loaded
 int is_tipc_available (void);
+
+// check if vsock is available (0/false if not, 1/true if it is)
+// /dev/sock might exist, but vsock_loopback module might not be loaded
+int is_vsock_available (void);
 
 //  Wrapper around 'inet_pton' for systems that don't support it (e.g. Windows
 //  XP)
