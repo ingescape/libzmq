@@ -1,7 +1,7 @@
 # CMake build script for ZeroMQ
 
 cmake_minimum_required(VERSION 3.16)
-set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11" CACHE STRING "Minimum OS X deployment version")
+set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0" CACHE STRING "Minimum OS X deployment version")
 
 option(OSX_UNIVERSAL "Build for both arm64 and x86_64" OFF)
 if(OSX_UNIVERSAL)
